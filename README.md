@@ -1,5 +1,6 @@
-GCM
-===
+# GCM
+
+[![Hex.pm](https://img.shields.io/hexpm/v/gcm.svg?style=flat-square)](https://hex.pm/packages/gcm)
 
 ## Installation
 
