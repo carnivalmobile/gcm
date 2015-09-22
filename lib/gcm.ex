@@ -9,7 +9,8 @@ defmodule GCM do
      canonical_ids: [], failure: 0,
      headers: [{"Content-Type", "application/json; charset=UTF-8"},
       {"Vary", "Accept-Encoding"}, {"Transfer-Encoding", "chunked"}],
-     not_registered_ids: [], status_code: 200, success: 1}}
+     invalid_registration_ids: [], not_registered_ids: [], status_code: 200,
+     success: 1}}
   ```
   """
   alias HTTPoison.Response
@@ -25,7 +26,8 @@ defmodule GCM do
          canonical_ids: [], failure: 0,
          headers: [{"Content-Type", "application/json; charset=UTF-8"},
           {"Vary", "Accept-Encoding"}, {"Transfer-Encoding", "chunked"}],
-         not_registered_ids: [], status_code: 200, success: 2}}
+        invalid_registration_ids: [], not_registered_ids: [], status_code: 200,
+        success: 2}}
   """
   @spec push(binary, [binary], map | [Keyword]) :: { :ok, map } | { :error, term }
   def push(api_key, registration_ids, options \\ %{}) do
@@ -61,7 +63,7 @@ defmodule GCM do
     { :error, :server_error }
   end
 
-  @empty_results %{ not_registered_ids: [], canonical_ids: [] }
+  @empty_results %{ not_registered_ids: [], canonical_ids: [], invalid_registration_ids: [] }
 
   defp build_results(%{ "failure" => 0, "canonical_ids" => 0 }, _), do: @empty_results
   defp build_results(%{ "results" => results}, reg_ids) do
@@ -71,6 +73,8 @@ defmodule GCM do
         case result do
           %{ "error" => "NotRegistered" } ->
             update_in(response[:not_registered_ids], &([reg_id | &1]))
+          %{ "error" => "InvalidRegistration" } ->
+            update_in(response[:invalid_registration_ids], &([reg_id | &1]))
           %{ "registration_id" => new_reg_id } ->
             update = %{ old: reg_id, new: new_reg_id}
             update_in(response[:canonical_ids], &([update | &1]))
