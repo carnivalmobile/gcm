@@ -1,6 +1,6 @@
 # GCM
 
-[![Hex.pm](https://img.shields.io/hexpm/v/gcm.svg?style=flat-square)](https://hex.pm/packages/gcm)
+[![Build Status](https://travis-ci.org/carnivalmobile/gcm.svg?branch=master)](https://travis-ci.org/carnivalmobile/gcm) [![Hex.pm](https://img.shields.io/hexpm/v/gcm.svg?style=flat-square)](https://hex.pm/packages/gcm)
 
 ## Installation
 
