@@ -135,6 +135,41 @@ defmodule GCMTest do
     assert validate [Poison, HTTPoison]
   end
 
+  test "push notification to GCM with every supported result" do
+    registration_ids = ["old_reg", "invalid_reg", "not_reg"]
+    options = %{ data: %{ alert: "Push!" } }
+    req_body = "req_body"
+    resp_body = %{ "canonical_ids" => 1,
+                   "failure" => 2,
+                   "success" => 2,
+                   "results" => [%{ "registration_id" => "new_reg" },
+                                 %{ "error" => "InvalidRegistration" },
+                                 %{ "error" => "NotRegistered" },
+                                 %{ "message_id" => "1:0408" }] }
+    original_resp_body = "original"
+    headers = []
+
+    http_response = %HTTPoison.Response{status_code: 200,
+                                        body: original_resp_body,
+                                        headers: headers}
+
+    expect(Poison, :encode!, [%{ registration_ids: registration_ids, data: %{ alert: "Push!" } }], req_body)
+    expect(Poison, :decode!, [original_resp_body], resp_body)
+    expect(HTTPoison, :post, ["https://android.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+
+    assert push("api_key", registration_ids, options) ==
+      { :ok, %{ canonical_ids: [%{ old: "old_reg", new: "new_reg" }],
+                not_registered_ids: ["not_reg"],
+                invalid_registration_ids: ["invalid_reg"],
+                success: 2,
+                failure: 2,
+                status_code: 200,
+                body: original_resp_body,
+                headers: headers } }
+
+    assert validate [Poison, HTTPoison]
+  end
+
   test "push notification to GCM with a 400 response " do
     registration_ids = ["reg1", "reg2"]
     req_body = "req_body"
