@@ -8,7 +8,7 @@ defmodule GCMTest do
     :ok
   end
 
-  test "push notification to GCM with a 200 response" do
+  test "push multicast notification to GCM with a 200 response" do
     registration_ids = ["reg1", "reg2"]
     options = %{ data: %{ alert: "Push!" } }
     req_body = "req_body"
@@ -24,7 +24,7 @@ defmodule GCMTest do
 
     expect(Poison, :encode!, [%{ registration_ids: registration_ids, data: %{ alert: "Push!" } }], req_body)
     expect(Poison, :decode!, 1, resp_body)
-    expect(HTTPoison, :post, ["https://android.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
 
     assert push("api_key", registration_ids, options) ==
       { :ok, %{ canonical_ids: [],
@@ -39,8 +39,39 @@ defmodule GCMTest do
     assert validate [Poison, HTTPoison]
   end
 
+  test "push unicast notification to GCM with a 200 response" do
+    registration_id = "reg1"
+    options = %{ data: %{ alert: "Push!" } }
+    req_body = "req_body"
+    original_resp_body = "original"
+    headers = []
+    http_response = %HTTPoison.Response{ status_code: 200,
+                                         body: original_resp_body,
+                                         headers: headers}
+    resp_body = %{ "canonical_ids" => 0,
+                   "failure" => 0,
+                   "success" => 1,
+                   "results" => [%{ "error" => "NotRegistered" }] }
+
+    expect(Poison, :encode!, [%{ to: registration_id, data: %{ alert: "Push!" } }], req_body)
+    expect(Poison, :decode!, 1, resp_body)
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+
+    assert push("api_key", registration_id, options) ==
+      { :ok, %{ canonical_ids: [],
+                not_registered_ids: [],
+                invalid_registration_ids: [],
+                success: 1,
+                failure: 0,
+                status_code: 200,
+                body: original_resp_body,
+                headers: headers } }
+
+    assert validate [Poison, HTTPoison]
+  end
+
   test "push notification to GCM with NotRegistered" do
-    registration_ids = ["reg1"]
+    registration_id = "reg1"
     options = %{ data: %{ alert: "Push!" } }
     req_body = "req_body"
     resp_body = %{ "canonical_ids" => 0,
@@ -54,11 +85,11 @@ defmodule GCMTest do
                                         body: original_resp_body,
                                         headers: headers}
 
-    expect(Poison, :encode!, [%{ registration_ids: registration_ids, data: %{ alert: "Push!" } }], req_body)
+    expect(Poison, :encode!, [%{ to: registration_id, data: %{ alert: "Push!" } }], req_body)
     expect(Poison, :decode!, [original_resp_body], resp_body)
-    expect(HTTPoison, :post, ["https://android.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
 
-    assert push("api_key", registration_ids, options) ==
+    assert push("api_key", registration_id, options) ==
       { :ok, %{ canonical_ids: [],
                 not_registered_ids: ["reg1"],
                 invalid_registration_ids: [],
@@ -72,7 +103,7 @@ defmodule GCMTest do
   end
 
   test "push notification to GCM with InvalidRegistration" do
-    registration_ids = ["reg1"]
+    registration_id = "reg1"
     options = %{ data: %{ alert: "Push!" } }
     req_body = "req_body"
     resp_body = %{ "canonical_ids" => 0,
@@ -86,11 +117,11 @@ defmodule GCMTest do
                                         body: original_resp_body,
                                         headers: headers}
 
-    expect(Poison, :encode!, [%{ registration_ids: registration_ids, data: %{ alert: "Push!" } }], req_body)
+    expect(Poison, :encode!, [%{ to: registration_id, data: %{ alert: "Push!" } }], req_body)
     expect(Poison, :decode!, [original_resp_body], resp_body)
-    expect(HTTPoison, :post, ["https://android.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
 
-    assert push("api_key", registration_ids, options) ==
+    assert push("api_key", registration_id, options) ==
       { :ok, %{ canonical_ids: [],
                 not_registered_ids: [],
                 invalid_registration_ids: ["reg1"],
@@ -104,7 +135,7 @@ defmodule GCMTest do
   end
 
   test "push notification to GCM with canonical ids" do
-    registration_ids = ["reg1"]
+    registration_id = "reg1"
     options = %{ data: %{ alert: "Push!" } }
     req_body = "req_body"
     resp_body = %{ "canonical_ids" => 1,
@@ -118,11 +149,11 @@ defmodule GCMTest do
                                         body: original_resp_body,
                                         headers: headers}
 
-    expect(Poison, :encode!, [%{ registration_ids: registration_ids, data: %{ alert: "Push!" } }], req_body)
+    expect(Poison, :encode!, [%{ to: registration_id, data: %{ alert: "Push!" } }], req_body)
     expect(Poison, :decode!, [original_resp_body], resp_body)
-    expect(HTTPoison, :post, ["https://android.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
 
-    assert push("api_key", registration_ids, options) ==
+    assert push("api_key", registration_id, options) ==
       { :ok, %{ canonical_ids: [%{ old: "reg1", new: "newreg1" }],
                 not_registered_ids: [],
                 invalid_registration_ids: [],
@@ -155,7 +186,7 @@ defmodule GCMTest do
 
     expect(Poison, :encode!, [%{ registration_ids: registration_ids, data: %{ alert: "Push!" } }], req_body)
     expect(Poison, :decode!, [original_resp_body], resp_body)
-    expect(HTTPoison, :post, ["https://android.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
 
     assert push("api_key", registration_ids, options) ==
       { :ok, %{ canonical_ids: [%{ old: "old_reg", new: "new_reg" }],
@@ -176,7 +207,7 @@ defmodule GCMTest do
     http_response = %HTTPoison.Response{status_code: 400, body: "{}"}
 
     expect(Poison, :encode!, [%{ registration_ids: registration_ids }], req_body)
-    expect(HTTPoison, :post, ["https://android.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
 
     assert push("api_key", registration_ids) == { :error, :bad_request }
 
@@ -189,7 +220,7 @@ defmodule GCMTest do
     http_response = %HTTPoison.Response{status_code: 401, body: "{}"}
 
     expect(Poison, :encode!, [%{ registration_ids: registration_ids }], req_body)
-    expect(HTTPoison, :post, ["https://android.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
 
     assert push("api_key", registration_ids) == { :error, :unauthorized }
 
@@ -202,7 +233,7 @@ defmodule GCMTest do
     http_response = %HTTPoison.Response{status_code: 503, body: "{}"}
 
     expect(Poison, :encode!, [%{ registration_ids: registration_ids }], req_body)
-    expect(HTTPoison, :post, ["https://android.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
 
     assert push("api_key", registration_ids) == { :error, :service_unavaiable }
 
@@ -215,7 +246,7 @@ defmodule GCMTest do
     http_response = %HTTPoison.Response{status_code: 504, body: "{}"}
 
     expect(Poison, :encode!, [%{ registration_ids: registration_ids }], req_body)
-    expect(HTTPoison, :post, ["https://android.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
 
     assert push("api_key", registration_ids) == { :error, :server_error }
 

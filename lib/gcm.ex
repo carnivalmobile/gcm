@@ -15,11 +15,13 @@ defmodule GCM do
   """
   alias HTTPoison.Response
 
-  @base_url "https://android.googleapis.com/gcm"
+  @base_url "https://gcm-http.googleapis.com/gcm"
 
   @doc """
-  Push a notification to a list of `registration_ids` using the `api_key` as authorization
+  Push a notification to a list of `registration_ids` or a single `registration_id`
+  using the `api_key` as authorization.
 
+  ```
       iex> GCM.push(api_key, ["registration_id1", "registration_id2"])
       {:ok,
        %{body: "...",
@@ -28,10 +30,18 @@ defmodule GCM do
           {"Vary", "Accept-Encoding"}, {"Transfer-Encoding", "chunked"}],
         invalid_registration_ids: [], not_registered_ids: [], status_code: 200,
         success: 2}}
+  ```
   """
-  @spec push(binary, [binary], map | [Keyword]) :: { :ok, map } | { :error, term }
-  def push(api_key, registration_ids, options \\ %{}) do
-    body = %{ registration_ids: registration_ids }
+  @spec push(String.t, String.t | [String.t], Map.t | Keyword.t) :: { :ok, Map.t } | { :error, term }
+  def push(api_key, registration_ids, options \\ %{})
+  def push(api_key, registration_id, options) when is_binary(registration_id) do
+    push(api_key, [registration_id], options)
+  end
+  def push(api_key, registration_ids, options) do
+    body = case registration_ids do
+      [id] -> %{ to: id }
+      ids -> %{ registration_ids: ids }
+    end
       |> Dict.merge(options)
       |> Poison.encode!
 
