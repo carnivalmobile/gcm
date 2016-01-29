@@ -79,7 +79,7 @@ defmodule GCM do
   defp build_results(%{ "results" => results}, reg_ids) do
     response = @empty_results
     Enum.zip(reg_ids, results)
-      |> Enum.reduce response, fn {reg_id, result}, response ->
+      |> Enum.reduce(response, fn({reg_id, result}, response) ->
         case result do
           %{ "error" => "NotRegistered" } ->
             update_in(response[:not_registered_ids], &([reg_id | &1]))
@@ -90,7 +90,7 @@ defmodule GCM do
             update_in(response[:canonical_ids], &([update | &1]))
           _ -> response
         end
-      end
+      end)
   end
   defp build_results(_, _), do: @empty_results
 
