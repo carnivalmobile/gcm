@@ -33,11 +33,8 @@ defmodule GCM do
   ```
   """
   @spec push(String.t, String.t | [String.t], Map.t | Keyword.t) :: { :ok, Map.t } | { :error, term }
-  def push(api_key, registration_ids, options \\ %{})
-  def push(api_key, registration_id, options) when is_binary(registration_id) do
-    push(api_key, [registration_id], options)
-  end
-  def push(api_key, registration_ids, options) do
+  def push(api_key, registration_ids, options \\ %{}) do
+    registration_ids = List.wrap(registration_ids)
     body = case registration_ids do
       [id] -> %{ to: id }
       ids -> %{ registration_ids: ids }
