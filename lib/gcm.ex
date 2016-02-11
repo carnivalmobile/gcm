@@ -15,11 +15,13 @@ defmodule GCM do
   """
   alias HTTPoison.Response
 
-  @base_url "https://android.googleapis.com/gcm"
+  @base_url "https://gcm-http.googleapis.com/gcm"
 
   @doc """
-  Push a notification to a list of `registration_ids` using the `api_key` as authorization
+  Push a notification to a list of `registration_ids` or a single `registration_id`
+  using the `api_key` as authorization.
 
+  ```
       iex> GCM.push(api_key, ["registration_id1", "registration_id2"])
       {:ok,
        %{body: "...",
@@ -28,10 +30,15 @@ defmodule GCM do
           {"Vary", "Accept-Encoding"}, {"Transfer-Encoding", "chunked"}],
         invalid_registration_ids: [], not_registered_ids: [], status_code: 200,
         success: 2}}
+  ```
   """
-  @spec push(binary, [binary], map | [Keyword]) :: { :ok, map } | { :error, term }
+  @spec push(String.t, String.t | [String.t], Map.t | Keyword.t) :: { :ok, Map.t } | { :error, term }
   def push(api_key, registration_ids, options \\ %{}) do
-    body = %{ registration_ids: registration_ids }
+    registration_ids = List.wrap(registration_ids)
+    body = case registration_ids do
+      [id] -> %{ to: id }
+      ids -> %{ registration_ids: ids }
+    end
       |> Dict.merge(options)
       |> Poison.encode!
 
@@ -69,7 +76,7 @@ defmodule GCM do
   defp build_results(%{ "results" => results}, reg_ids) do
     response = @empty_results
     Enum.zip(reg_ids, results)
-      |> Enum.reduce response, fn {reg_id, result}, response ->
+      |> Enum.reduce(response, fn({reg_id, result}, response) ->
         case result do
           %{ "error" => "NotRegistered" } ->
             update_in(response[:not_registered_ids], &([reg_id | &1]))
@@ -80,7 +87,7 @@ defmodule GCM do
             update_in(response[:canonical_ids], &([update | &1]))
           _ -> response
         end
-      end
+      end)
   end
   defp build_results(_, _), do: @empty_results
 
