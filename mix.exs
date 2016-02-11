@@ -10,6 +10,7 @@ defmodule GCM.Mixfile do
      version: "1.2.0",
      elixir: "~> 1.0",
      name: "GCM",
+     description: @description,
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps,
