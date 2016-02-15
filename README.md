@@ -8,7 +8,7 @@ First, add GCM to your mix.exs dependencies:
 
 ```elixir
 def deps do
-  [{:gcm, "~> 1.0.0"}]
+  [{:gcm, "~> 1.2"}]
 end
 ```
 
