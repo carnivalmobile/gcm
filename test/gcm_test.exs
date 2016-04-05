@@ -30,6 +30,7 @@ defmodule GCMTest do
       { :ok, %{ canonical_ids: [],
                 not_registered_ids: [],
                 invalid_registration_ids: [],
+                to_be_retried_ids: [],
                 success: 2,
                 failure: 0,
                 status_code: 200,
@@ -61,6 +62,7 @@ defmodule GCMTest do
       { :ok, %{ canonical_ids: [],
                 not_registered_ids: [],
                 invalid_registration_ids: [],
+                to_be_retried_ids: [],
                 success: 1,
                 failure: 0,
                 status_code: 200,
@@ -93,6 +95,7 @@ defmodule GCMTest do
       { :ok, %{ canonical_ids: [],
                 not_registered_ids: ["reg1"],
                 invalid_registration_ids: [],
+                to_be_retried_ids: [],
                 success: 0,
                 failure: 1,
                 status_code: 200,
@@ -125,6 +128,7 @@ defmodule GCMTest do
       { :ok, %{ canonical_ids: [],
                 not_registered_ids: [],
                 invalid_registration_ids: ["reg1"],
+                to_be_retried_ids: [],
                 success: 0,
                 failure: 1,
                 status_code: 200,
@@ -157,6 +161,7 @@ defmodule GCMTest do
       { :ok, %{ canonical_ids: [%{ old: "reg1", new: "newreg1" }],
                 not_registered_ids: [],
                 invalid_registration_ids: [],
+                to_be_retried_ids: [],
                 success: 1,
                 failure: 0,
                 status_code: 200,
@@ -166,16 +171,84 @@ defmodule GCMTest do
     assert validate [Poison, HTTPoison]
   end
 
+  test "push notification to GCM with InternalServerError" do
+    registration_id = "reg1"
+    options = %{ data: %{ alert: "Push!" } }
+    req_body = "req_body"
+    resp_body = %{ "canonical_ids" => 0,
+                   "failure" => 1,
+                   "success" => 0,
+                   "results" => [%{"error" => "InternalServerError"}] }
+    original_resp_body = "original"
+    headers = []
+
+    http_response = %HTTPoison.Response{status_code: 200,
+                                        body: original_resp_body,
+                                        headers: headers}
+
+    expect(Poison, :encode!, [%{ to: registration_id, data: %{ alert: "Push!" } }], req_body)
+    expect(Poison, :decode!, [original_resp_body], resp_body)
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+
+    assert push("api_key", registration_id, options) ==
+      { :ok, %{ canonical_ids: [],
+                not_registered_ids: [],
+                invalid_registration_ids: [],
+                to_be_retried_ids: ["reg1"],
+                success: 0,
+                failure: 1,
+                status_code: 200,
+                body: original_resp_body,
+                headers: headers } }
+
+    assert validate [Poison, HTTPoison]
+  end
+
+  test "push notification to GCM with Unavailable" do
+    registration_id = "reg1"
+    options = %{ data: %{ alert: "Push!" } }
+    req_body = "req_body"
+    resp_body = %{ "canonical_ids" => 0,
+                   "failure" => 1,
+                   "success" => 0,
+                   "results" => [%{"error" => "Unavailable"}] }
+    original_resp_body = "original"
+    headers = []
+
+    http_response = %HTTPoison.Response{status_code: 200,
+                                        body: original_resp_body,
+                                        headers: headers}
+
+    expect(Poison, :encode!, [%{ to: registration_id, data: %{ alert: "Push!" } }], req_body)
+    expect(Poison, :decode!, [original_resp_body], resp_body)
+    expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
+
+    assert push("api_key", registration_id, options) ==
+      { :ok, %{ canonical_ids: [],
+                not_registered_ids: [],
+                invalid_registration_ids: [],
+                to_be_retried_ids: ["reg1"],
+                success: 0,
+                failure: 1,
+                status_code: 200,
+                body: original_resp_body,
+                headers: headers } }
+
+    assert validate [Poison, HTTPoison]
+  end
+
   test "push notification to GCM with every supported result" do
-    registration_ids = ["old_reg", "invalid_reg", "not_reg"]
+    registration_ids = ["old_reg", "invalid_reg", "not_reg", "unavailable_reg", "internal_error_reg"]
     options = %{ data: %{ alert: "Push!" } }
     req_body = "req_body"
     resp_body = %{ "canonical_ids" => 1,
-                   "failure" => 2,
+                   "failure" => 4,
                    "success" => 2,
                    "results" => [%{ "registration_id" => "new_reg" },
                                  %{ "error" => "InvalidRegistration" },
                                  %{ "error" => "NotRegistered" },
+                                 %{ "error" => "Unavailable" },
+                                 %{ "error" => "InternalServerError" },
                                  %{ "message_id" => "1:0408" }] }
     original_resp_body = "original"
     headers = []
@@ -192,8 +265,9 @@ defmodule GCMTest do
       { :ok, %{ canonical_ids: [%{ old: "old_reg", new: "new_reg" }],
                 not_registered_ids: ["not_reg"],
                 invalid_registration_ids: ["invalid_reg"],
+                to_be_retried_ids: ["internal_error_reg", "unavailable_reg"],
                 success: 2,
-                failure: 2,
+                failure: 4,
                 status_code: 200,
                 body: original_resp_body,
                 headers: headers } }

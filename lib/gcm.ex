@@ -70,7 +70,10 @@ defmodule GCM do
     { :error, :server_error }
   end
 
-  @empty_results %{ not_registered_ids: [], canonical_ids: [], invalid_registration_ids: [] }
+  @empty_results %{ not_registered_ids: [],
+                    canonical_ids: [],
+                    invalid_registration_ids: [],
+                    to_be_retried_ids: [] }
 
   defp build_results(%{ "failure" => 0, "canonical_ids" => 0 }, _), do: @empty_results
   defp build_results(%{ "results" => results}, reg_ids) do
@@ -79,17 +82,21 @@ defmodule GCM do
       |> Enum.reduce(response, fn({reg_id, result}, response) ->
         case result do
           %{ "error" => "NotRegistered" } ->
-            update_in(response[:not_registered_ids], &([reg_id | &1]))
+            prepend_in(response, :not_registered_ids, reg_id)
           %{ "error" => "InvalidRegistration" } ->
-            update_in(response[:invalid_registration_ids], &([reg_id | &1]))
+            prepend_in(response, :invalid_registration_ids, reg_id)
+          %{ "error" => error } when error in ["InternalServerError", "Unavailable"] ->
+            prepend_in(response, :to_be_retried_ids, reg_id)
           %{ "registration_id" => new_reg_id } ->
             update = %{ old: reg_id, new: new_reg_id}
-            update_in(response[:canonical_ids], &([update | &1]))
+            prepend_in(response, :canonical_ids, update)
           _ -> response
         end
       end)
   end
   defp build_results(_, _), do: @empty_results
+
+  defp prepend_in(map, key, val), do: update_in(map[key], &([val | &1]))
 
   defp headers(api_key) do
     [{ "Authorization", "key=#{api_key}" },
