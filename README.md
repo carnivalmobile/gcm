@@ -29,6 +29,7 @@ iex> GCM.push("api_key", ["registration_id1", "registration_id2"], %{notificatio
 {:ok,
  %{body: "...",
    canonical_ids: [], failure: 0,
+   to_be_retried_ids: [],
    headers: [{"Content-Type", "application/json; charset=UTF-8"},
     {"Vary", "Accept-Encoding"}, {"Transfer-Encoding", "chunked"}],
    invalid_registration_ids: [], not_registered_ids: [], status_code: 200, success: 2}}
@@ -43,6 +44,7 @@ iex> GCM.push(api_key, ["registration_id1", "registration_id2"])
    canonical_ids: [%{ old: "registration_id1", new: "new_registration_id1"}], failure: 0,
    headers: [{"Content-Type", "application/json; charset=UTF-8"},
     {"Vary", "Accept-Encoding"}, {"Transfer-Encoding", "chunked"}],
+   to_be_retried_ids: [],
    invalid_registration_ids: [],
    not_registered_ids: [], status_code: 200, success: 2}}
 ```
@@ -56,12 +58,29 @@ An invalid registration is just wrong data.
 iex> GCM.push(api_key, ["registration_id1", "registration_id2", "registration_id3"])
 {:ok,
  %{body: "...",
+   to_be_retried_ids: [],
    canonical_ids: [], failure: 2,
    headers: [{"Content-Type", "application/json; charset=UTF-8"},
     {"Vary", "Accept-Encoding"}, {"Transfer-Encoding", "chunked"}],
    invalid_registration_ids: ["registration_id2"],
    not_registered_ids: ["registration_id1"], status_code: 200, success: 1}}
 ```
+
+A partial successful push may also have `to_be_retried_ids` so that the user can retry these specific registration ids as they failed because the server returned with `InternalServerError` or `Unavailable`.
+
+```
+iex> GCM.push(api_key, ["registration_id1", "registration_id2", "registration_id3"])
+{:ok,
+ %{body: "...",
+   to_be_retried_ids: ["registration_id1", "registration_id3"],
+   canonical_ids: [], failure: 2,
+   headers: [{"Content-Type", "application/json; charset=UTF-8"},
+    {"Vary", "Accept-Encoding"}, {"Transfer-Encoding", "chunked"}],
+   invalid_registration_ids: [],
+   not_registered_ids: [], status_code: 200, success: 1}}
+```
+
+The above push failed to deliver to `registration_id1` and `registration_id3` but succeeded for `registration_id2`
 
 If the push failed the return is `{:error, reason}` where reason will include more information on what failed.
 
