@@ -7,7 +7,7 @@ defmodule GCM.Mixfile do
 
   def project do
     [app: :gcm,
-     version: "1.3.0",
+     version: "1.3.1",
      elixir: "~> 1.0",
      name: "GCM",
      description: @description,
