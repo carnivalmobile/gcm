@@ -309,7 +309,7 @@ defmodule GCMTest do
     expect(Poison, :encode!, [%{ registration_ids: registration_ids }], req_body)
     expect(HTTPoison, :post, ["https://gcm-http.googleapis.com/gcm/send", req_body, [{"Authorization", "key=api_key"}, {"Content-Type", "application/json"}, {"Accept", "application/json"}]], { :ok, http_response })
 
-    assert push("api_key", registration_ids) == { :error, :service_unavaiable }
+    assert push("api_key", registration_ids) == { :error, :service_unavailable }
 
     assert validate [Poison, HTTPoison]
   end

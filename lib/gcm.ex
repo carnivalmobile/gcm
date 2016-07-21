@@ -64,7 +64,7 @@ defmodule GCM do
     { :error, :unauthorized }
   end
   defp build_response(_, %Response{ status_code: 503 }) do
-    { :error, :service_unavaiable }
+    { :error, :service_unavailable }
   end
   defp build_response(_, %Response{ status_code: code }) when code in 500..599 do
     { :error, :server_error }
