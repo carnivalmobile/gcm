@@ -39,7 +39,7 @@ defmodule GCM do
       [id] -> %{ to: id }
       ids -> %{ registration_ids: ids }
     end
-      |> Dict.merge(options)
+      |> Map.merge(options)
       |> Poison.encode!
 
     case HTTPoison.post(@base_url <> "/send", body, headers(api_key)) do
