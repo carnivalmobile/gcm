@@ -39,7 +39,7 @@ defmodule GCM do
       [id] -> %{ to: id }
       ids -> %{ registration_ids: ids }
     end
-      |> Dict.merge(options)
+      |> Map.merge(options)
       |> Poison.encode!
 
     case HTTPoison.post(@base_url <> "/send", body, headers(api_key)) do
@@ -64,7 +64,7 @@ defmodule GCM do
     { :error, :unauthorized }
   end
   defp build_response(_, %Response{ status_code: 503 }) do
-    { :error, :service_unavaiable }
+    { :error, :service_unavailable }
   end
   defp build_response(_, %Response{ status_code: code }) when code in 500..599 do
     { :error, :server_error }
