@@ -8,7 +8,7 @@ defmodule GCM.Mixfile do
   def project do
     [app: :gcm,
      version: "1.4.0",
-     elixir: "~> 1.0",
+     elixir: "~> 1.2",
      name: "GCM",
      description: @description,
      build_embedded: Mix.env == :prod,
