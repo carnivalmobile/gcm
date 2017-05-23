@@ -13,8 +13,8 @@ defmodule GCM.Mixfile do
      description: @description,
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     deps: deps,
-     package: package,
+     deps: deps(),
+     package: package(),
      docs: [main: "GCM", readme: "README.md",
             source_url: "https://github.com/carnivalmobile/gcm"]]
   end
