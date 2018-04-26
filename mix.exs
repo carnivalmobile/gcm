@@ -27,8 +27,8 @@ defmodule GCM.Mixfile do
     [{ :httpoison, "~> 1.0" },
      { :poison, "~> 3.1" },
      { :meck, "~> 0.8", only: :test},
-     { :earmark, "~> 1.0", only: :docs },
-     { :ex_doc, "~> 0.13", only: :docs }]
+     { :earmark, "~> 1.0", only: :dev },
+     { :ex_doc, "~> 0.13", only: :dev }]
   end
 
   defp package do
