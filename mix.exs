@@ -7,7 +7,7 @@ defmodule GCM.Mixfile do
 
   def project do
     [app: :gcm,
-     version: "1.4.0",
+     version: "1.5.0",
      elixir: "~> 1.2",
      name: "GCM",
      description: @description,
@@ -24,8 +24,8 @@ defmodule GCM.Mixfile do
   end
 
   defp deps do
-    [{ :httpoison, "~> 0.9" },
-     { :poison, "~> 1.5 or ~> 2.0" },
+    [{ :httpoison, "~> 1.0" },
+     { :poison, "~> 3.1" },
      { :meck, "~> 0.8", only: :test},
      { :earmark, "~> 1.0", only: :docs },
      { :ex_doc, "~> 0.13", only: :docs }]
