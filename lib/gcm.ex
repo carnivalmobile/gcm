@@ -15,7 +15,7 @@ defmodule GCM do
   """
   alias HTTPoison.Response
 
-  @base_url "https://gcm-http.googleapis.com/gcm"
+  @base_url "https://fcm.googleapis.com/fcm"
 
   @doc """
   Push a notification to a list of `registration_ids` or a single `registration_id`
